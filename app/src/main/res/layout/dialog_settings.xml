@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- 플레이어 엔진 선택 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="2dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="플레이어 엔진"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginEnd="8dp"
+                android:drawableStart="@drawable/ic_movie"
+                android:drawablePadding="8dp"
+                android:drawableTint="?android:attr/textColorSecondary" />
+
+            <Spinner
+                android:id="@+id/spinnerPlayerEngine"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="120dp" />
+        </LinearLayout>
+
+        <!-- 구분선 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp"
+            android:background="?android:attr/dividerHorizontal" />
+
+        <!-- 소리 ON/OFF -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="소리"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginEnd="8dp"
+                android:drawableStart="@drawable/ic_volume_on"
+                android:drawablePadding="8dp"
+                android:drawableTint="?android:attr/textColorSecondary" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchSound"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <!-- 시작시 무음 ON/OFF -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="시작시 무음"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginEnd="8dp"
+                android:drawableStart="@drawable/ic_volume_off"
+                android:drawablePadding="8dp"
+                android:drawableTint="?android:attr/textColorSecondary" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchStartMute"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <!-- 시작시 최대밝기 ON/OFF -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="시작시 최대밝기"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginEnd="8dp"
+                android:drawableStart="@drawable/ic_brightness"
+                android:drawablePadding="8dp"
+                android:drawableTint="?android:attr/textColorSecondary" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchStartMaxBrightness"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <!-- 스킵 시간 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="스킵 시간"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginEnd="8dp"
+                android:drawableStart="@drawable/ic_fast_forward"
+                android:drawablePadding="8dp"
+                android:drawableTint="?android:attr/textColorSecondary" />
+
+            <Spinner
+                android:id="@+id/spinnerSkipTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="80dp" />
+        </LinearLayout>
+
+        <!-- 스와이프 민감도 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="2dp"
+            android:layout_marginTop="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="스와이프 민감도"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginEnd="8dp"
+                android:drawableStart="@drawable/ic_swipe"
+                android:drawablePadding="8dp"
+                android:drawableTint="?android:attr/textColorSecondary" />
+
+            <Spinner
+                android:id="@+id/spinnerSensitivity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="80dp" />
+        </LinearLayout>
+
+        <!-- 밝기 스와이프 ON/OFF -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="밝기 스와이프"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginEnd="8dp"
+                android:drawableStart="@drawable/ic_brightness"
+                android:drawablePadding="8dp"
+                android:drawableTint="?android:attr/textColorSecondary" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchBrightnessSwipe"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <!-- 볼륨 스와이프 ON/OFF -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="볼륨 스와이프"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginEnd="8dp"
+                android:drawableStart="@drawable/ic_volume_on"
+                android:drawablePadding="8dp"
+                android:drawableTint="?android:attr/textColorSecondary" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchVolumeSwipe"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <!-- 버퍼링 모드 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="2dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="버퍼링 모드"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginEnd="8dp"
+                android:drawableStart="@drawable/ic_schedule"
+                android:drawablePadding="8dp"
+                android:drawableTint="?android:attr/textColorSecondary" />
+
+            <Spinner
+                android:id="@+id/spinnerBufferMode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="120dp" />
+        </LinearLayout>
+
+        <!-- 시크 모드 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="2dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="시크 모드"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginEnd="8dp"
+                android:drawableStart="@drawable/ic_fast_forward"
+                android:drawablePadding="8dp"
+                android:drawableTint="?android:attr/textColorSecondary" />
+
+            <Spinner
+                android:id="@+id/spinnerSeekMode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="120dp" />
+        </LinearLayout>
+
+        <!-- 폴더 내 연속 재생 ON/OFF -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="폴더 내 연속 재생"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginEnd="8dp"
+                android:drawableStart="@drawable/ic_folder"
+                android:drawablePadding="8dp"
+                android:drawableTint="?android:attr/textColorSecondary" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchContinuousPlay"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <!-- 내장 자막 선택 -->
+        <LinearLayout
+            android:id="@+id/layoutEmbeddedSubtitles"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="2dp"
+            android:layout_marginTop="4dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="내장 자막"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginEnd="8dp"
+                android:drawableStart="@drawable/ic_subtitles"
+                android:drawablePadding="8dp"
+                android:drawableTint="?android:attr/textColorSecondary" />
+
+            <Spinner
+                android:id="@+id/spinnerEmbeddedSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="120dp" />
+        </LinearLayout>
+
+        <!-- 캐스팅 방식 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="2dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="캐스팅 방식"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginEnd="8dp"
+                android:drawableStart="@drawable/ic_cast"
+                android:drawablePadding="8dp"
+                android:drawableTint="?android:attr/textColorSecondary" />
+
+            <Spinner
+                android:id="@+id/spinnerCastMode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="120dp" />
+        </LinearLayout>
+
+        <!-- 구분선 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="4dp"
+            android:background="?android:attr/dividerHorizontal" />
+
+        <!-- 구간 재생 관리 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="구간 재생 관리"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorPrimary"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:drawableStart="@drawable/ic_bookmark"
+            android:drawablePadding="8dp"
+            android:drawableTint="?android:attr/textColorPrimary" />
+
+        <!-- 구간 추출 파일 저장 경로 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="2dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="추출 경로"
+                android:textSize="12sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginEnd="8dp"
+                android:drawableStart="@drawable/ic_save"
+                android:drawablePadding="6dp"
+                android:drawableTint="?android:attr/textColorSecondary" />
+
+            <EditText
+                android:id="@+id/editSegmentSavePath"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="/storage/emulated/0/Movies"
+                android:textSize="11sp"
+                android:singleLine="true"
+                android:inputType="text" />
+
+            <ImageButton
+                android:id="@+id/btnSelectFolder"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_folder"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:tint="?android:attr/textColorSecondary"
+                android:contentDescription="폴더 선택" />
+        </LinearLayout>
+
+        <!-- 구간 정보 파일 경로 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingVertical="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="구간 파일"
+                    android:textSize="12sp"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:layout_marginEnd="8dp"
+                    android:drawableStart="@drawable/ic_file"
+                    android:drawablePadding="6dp"
+                    android:drawableTint="?android:attr/textColorSecondary" />
+
+                <EditText
+                    android:id="@+id/editSegmentFilePath"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="11sp"
+                    android:singleLine="true"
+                    android:inputType="text"
+                    android:enabled="false" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:paddingTop="4dp">
+
+                <Button
+                    android:id="@+id/btnBackupSegmentFile"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="내려받기"
+                    android:textSize="12sp"
+                    android:padding="8dp"
+                    android:layout_marginEnd="4dp"
+                    android:drawableStart="@drawable/ic_download"
+                    android:drawablePadding="4dp"
+                    android:drawableTint="?android:attr/textColorPrimary" />
+
+                <Button
+                    android:id="@+id/btnRestoreSegmentFile"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="올리기"
+                    android:textSize="12sp"
+                    android:padding="8dp"
+                    android:layout_marginStart="4dp"
+                    android:drawableStart="@drawable/ic_upload"
+                    android:drawablePadding="4dp"
+                    android:drawableTint="?android:attr/textColorPrimary" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 캐시 관리 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="자막 캐시 관리"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorPrimary"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:drawableStart="@drawable/ic_cache"
+            android:drawablePadding="8dp"
+            android:drawableTint="?android:attr/textColorPrimary" />
+
+        <!-- 자막 캐시 ON/OFF -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="자막 캐시 사용"
+                android:textSize="13sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginEnd="8dp" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchSubtitleCache"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="캐시 경로"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:paddingBottom="2dp" />
+
+        <TextView
+            android:id="@+id/cachePathText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="/data/data/com.splayer.video/cache/converted_subtitles/"
+            android:textSize="10sp"
+            android:textColor="?android:attr/textColorTertiary"
+            android:paddingBottom="4dp"
+            android:fontFamily="monospace" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="4dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="캐시 파일 수"
+                android:textSize="12sp"
+                android:textColor="?android:attr/textColorSecondary" />
+
+            <TextView
+                android:id="@+id/cacheFileCountText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0개 파일"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnClearCache"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="캐시 삭제"
+            android:textSize="13sp"
+            android:paddingVertical="4dp"
+            android:textColor="@android:color/holo_red_dark"
+            style="?android:attr/borderlessButtonStyle"
+            android:drawableStart="@drawable/ic_delete"
+            android:drawablePadding="4dp"
+            android:drawableTint="@android:color/holo_red_dark" />
+
+    </LinearLayout>
+</ScrollView>

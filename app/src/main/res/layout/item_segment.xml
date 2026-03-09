@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="8dp"
+    android:gravity="center_vertical"
+    android:background="?android:attr/selectableItemBackground">
+
+    <TextView
+        android:id="@+id/segmentNumber"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:gravity="center"
+        android:text="1"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"
+        android:background="#FF4081" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginStart="12dp">
+
+        <TextView
+            android:id="@+id/segmentTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="00:00 - 00:00"
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorPrimary" />
+
+        <TextView
+            android:id="@+id/segmentDuration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="길이: 00:00"
+            android:textSize="11sp"
+            android:textColor="?android:attr/textColorSecondary" />
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/btnMoveUp"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="6dp"
+        android:src="@android:drawable/arrow_up_float"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="위로 이동" />
+
+    <ImageButton
+        android:id="@+id/btnMoveDown"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="6dp"
+        android:src="@android:drawable/arrow_down_float"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="아래로 이동" />
+
+    <ImageButton
+        android:id="@+id/btnEdit"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="6dp"
+        android:src="@drawable/ic_schedule"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="수정" />
+
+    <ImageButton
+        android:id="@+id/btnSave"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="6dp"
+        android:src="@drawable/ic_save"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="저장" />
+
+    <ImageButton
+        android:id="@+id/btnDelete"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="6dp"
+        android:src="@drawable/ic_delete"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="삭제" />
+
+</LinearLayout>

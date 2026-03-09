@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary colors -->
+    <color name="primary">#A855F7</color>
+    <color name="primary_variant">#9333EA</color>
+    <color name="secondary">#EC4899</color>
+    <color name="secondary_variant">#DB2777</color>
+
+    <!-- Background colors (Dark theme) -->
+    <color name="background">#121212</color>
+    <color name="surface">#1E1E1E</color>
+    <color name="thumbnail_background">#2C2C2C</color>
+
+    <!-- Text colors (Dark theme) -->
+    <color name="on_surface">#FFFFFF</color>
+    <color name="on_surface_secondary">#B0B0B0</color>
+    <color name="on_background_secondary">#808080</color>
+
+    <!-- Player colors -->
+    <color name="buffered">#555555</color>
+    <color name="unplayed">#333333</color>
+
+    <!-- Gradient overlay -->
+    <color name="gradient_start">#AA000000</color>
+    <color name="gradient_end">#00000000</color>
+</resources>

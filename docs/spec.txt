@@ -1,0 +1,31 @@
+플랫폼: Android Native
+언어: Kotlin (Java보다 간결하고 현대적)
+최소 SDK: API 24 (Android 7.0) 이상
+핵심 비디오 재생
+ExoPlayer (Google 공식 라이브러리)
+갤럭시 비디오 플레이어도 내부적으로 유사한 구조 사용
+하드웨어 가속 지원으로 매우 빠른 성능
+다양한 포맷 지원 (MP4, MKV, AVI 등)
+자막, 멀티 오디오 트랙 지원
+UI 프레임워크
+Jetpack Compose (선택 1) - 현대적이고 빠른 개발
+XML + View Binding (선택 2) - 더 가벼우며 세밀한 성능 최적화 가능
+성능 우선이라면 XML + View Binding을 추천합니다.
+아키텍처
+MVVM (Model-View-ViewModel)
+Jetpack Components: ViewModel, LiveData/StateFlow
+Coroutines: 비동기 처리
+미디어 관련
+MediaStore API: 기기 내 비디오 파일 스캔
+Coil 또는 Glide: 썸네일 로딩 (Glide가 약간 더 빠름)
+FFmpeg (선택): 특수 포맷이나 고급 기능 필요시
+추가 기능
+Room: 재생 위치, 설정 저장용 (가벼운 DB)
+DataStore: 사용자 설정 저장
+성능 최적화 포인트
+RecyclerView + DiffUtil로 비디오 목록 구현
+썸네일 캐싱 전략 (메모리 + 디스크)
+백그라운드 스레드에서 미디어 스캔
+하드웨어 가속 필수 활성화
+ProGuard/R8로 앱 크기 최소화
+이 스택으로 구현하면 갤럭시 비디오 플레이어 수준의 성능과 기능을 구현할 수 있습니다. 특히 ExoPlayer는 성능이 검증된 선택입니다.

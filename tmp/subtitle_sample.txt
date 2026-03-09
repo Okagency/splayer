@@ -1,0 +1,50 @@
+<SAMI>
+<HEAD>
+<STYLE TYPE="text/css">
+<!--
+P {margin-left: 16pt; margin-right: 16pt; margin-bottom:  
+16pt; margin-top: 16pt;
+   text-align: center; font-size: 18pt; font-family:  
+arial; font-weight: bold; color: #f0f0f0;}
+.UNKNOWNCC {Name:Unknown; lang:en-US; SAMIType:CC;}
+-->
+</STYLE>
+</HEAD>
+
+<BODY>
+<SYNC Start=26260><P Class=UNKNOWNCC>
+<font color="6666ff">극장에 가기 어려운<br>♡ 사랑하는  
+우리 언니와 100일 된 조카 조제를 위해~ ♡
+<SYNC Start=30260><P Class=UNKNOWNCC>&nbsp;
+<SYNC Start=58260><P Class=UNKNOWNCC>
+지미, 일어나. <font color="yellow">복사</font>하러 가야지. <br><font color="yellow">*카톨릭 미사에서 신부를 돕는  
+일</font> 
+<SYNC Start=63640><P Class=UNKNOWNCC>&nbsp;
+여보! 내 바지 못봤소?
+<SYNC Start=66770><P Class=UNKNOWNCC>&nbsp;
+<SYNC Start=67050><P Class=UNKNOWNCC>
+침대 위에 있잖아요. <br>어떻게 매번 그걸 못 찾아요.
+<SYNC Start=69390><P Class=UNKNOWNCC>&nbsp;
+<SYNC Start=69440><P Class=UNKNOWNCC>
+그럴 수도 있지...
+<SYNC Start=71650><P Class=UNKNOWNCC>&nbsp;
+<SYNC Start=76285><P Class=UNKNOWNCC>
+<font color="yellow">다우트<br>(의심, 회의, 불신)</font>  
+<SYNC Start=83750><P Class=UNKNOWNCC>&nbsp;
+<SYNC Start=90840><P Class=UNKNOWNCC>
+지미야! 가게에 가서<br>신문하고 담배 좀 사다 주렴.
+<SYNC Start=93890><P Class=UNKNOWNCC>&nbsp;
+<SYNC Start=93940><P Class=UNKNOWNCC>
+안돼요, 미사 가야해요.<br>저 요즘 복사하고 있거든요.
+<SYNC Start=96880><P Class=UNKNOWNCC>&nbsp;
+<SYNC Start=110290><P Class=UNKNOWNCC>
+- 야, 케빈!<br>- 야, 지미!
+<SYNC Start=113000><P Class=UNKNOWNCC>&nbsp;
+<SYNC Start=143520><P Class=UNKNOWNCC>
+- 왜 이제 왔어?<br>- 늦게 일어났어.
+<SYNC Start=145920><P Class=UNKNOWNCC>&nbsp;
+<SYNC Start=145970><P Class=UNKNOWNCC>
+암튼, 시간 안에 와서 다행이야.<br>내가 포도주 준비할 테니까, 니가 향 좀 켜줘.
+<SYNC Start=150110><P Class=UNKNOWNCC>&nbsp;
+<SYNC Start=151870><P Class=UNKNOWNCC>
+나 뚱뚱한 거 같애?  
