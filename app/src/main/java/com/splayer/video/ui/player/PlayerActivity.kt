@@ -304,6 +304,22 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
+    // 비디오 합치기 런처
+    private val videoMergePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris: List<Uri> ->
+        if (uris.size < 2) {
+            Toast.makeText(this, "2개 이상의 비디오를 선택해주세요.", Toast.LENGTH_SHORT).show()
+            return@registerForActivityResult
+        }
+        uris.forEach { uri ->
+            try {
+                contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (_: Exception) {}
+        }
+        showMergeOrderDialog(uris)
+    }
+
     private var selectedFolderUri: Uri? = null
     private var currentDialogEditText: EditText? = null
     private var currentFolderType: FolderType = FolderType.EXTRACTION
@@ -1929,7 +1945,36 @@ class PlayerActivity : AppCompatActivity() {
 
             val subtitleInfo: SubtitleInfo
 
-            if (isSubtitleCacheEnabled) {
+            // SMI/SAMI 파일인 경우: SRT로 변환 후 로드
+            val isSmi = fileName.endsWith(".smi", ignoreCase = true) || fileName.endsWith(".sami", ignoreCase = true)
+            if (isSmi) {
+                Log.d("PlayerActivity", "SMI 파일 감지, SRT 변환 시작: $fileName")
+
+                // 파일 내용 읽기
+                val inputStream = contentResolver.openInputStream(uri)
+                if (inputStream == null) {
+                    Log.e("PlayerActivity", "InputStream이 null입니다!")
+                    Toast.makeText(this, "파일을 열 수 없습니다", Toast.LENGTH_SHORT).show()
+                    return
+                }
+
+                val bytes = inputStream.use { it.readBytes() }
+                val subtitleContent = readTextWithEncoding(bytes, "smi")
+
+                val convertedFile = convertSmiContentToSrt(fileName, subtitleContent)
+                if (convertedFile != null && convertedFile.exists()) {
+                    Log.d("PlayerActivity", "SMI -> SRT 변환 성공: ${convertedFile.name}")
+                    subtitleInfo = SubtitleInfo(
+                        uri = Uri.fromFile(convertedFile),
+                        name = convertedFile.name,
+                        mimeType = androidx.media3.common.MimeTypes.APPLICATION_SUBRIP
+                    )
+                } else {
+                    Log.e("PlayerActivity", "SMI 변환 실패")
+                    Toast.makeText(this, "SMI 자막 변환에 실패했습니다", Toast.LENGTH_SHORT).show()
+                    return
+                }
+            } else if (isSubtitleCacheEnabled) {
                 // 캐시 ON: 기존 방식 (캐시 폴더에 복사)
                 val subtitleCacheDir = File(cacheDir, "subtitle_cache")
                 Log.d("PlayerActivity", "캐시 디렉토리 생성: ${subtitleCacheDir.absolutePath}")
@@ -2488,25 +2533,21 @@ class PlayerActivity : AppCompatActivity() {
             },
             onSave = { position ->
                 val segment = segments[position]
-                if (useVlcEngine) {
-                    AlertDialog.Builder(this)
-                        .setTitle("구간 추출")
-                        .setMessage("구간 추출은 ExoPlayer 엔진을 권장합니다.\n현재 VLC 모드에서 계속하시겠습니까?")
-                        .setPositiveButton("계속") { _, _ ->
-                            saveSegmentAsVideo(segment)
-                        }
-                        .setNegativeButton("취소", null)
-                        .show()
-                } else {
-                    AlertDialog.Builder(this)
-                        .setTitle("구간 추출")
-                        .setMessage("${segment.sequence}번 구간을 비디오 파일로 저장하시겠습니까?")
-                        .setPositiveButton("Yes") { _, _ ->
-                            saveSegmentAsVideo(segment)
-                        }
-                        .setNegativeButton("No", null)
-                        .show()
-                }
+                val msg = if (useVlcEngine)
+                    "${segment.sequence}번 구간을 저장합니다.\n(VLC 모드 — ExoPlayer 권장)"
+                else
+                    "${segment.sequence}번 구간을 비디오 파일로 저장합니다."
+                AlertDialog.Builder(this)
+                    .setTitle("구간 추출")
+                    .setMessage(msg)
+                    .setPositiveButton("시간 기준") { _, _ ->
+                        saveSegmentAsVideo(segment, useKeyframe = false)
+                    }
+                    .setNeutralButton("키프레임 기준") { _, _ ->
+                        saveSegmentAsVideo(segment, useKeyframe = true)
+                    }
+                    .setNegativeButton("취소", null)
+                    .show()
             },
             onDelete = { position ->
                 AlertDialog.Builder(this)
@@ -2749,15 +2790,28 @@ class PlayerActivity : AppCompatActivity() {
     /**
      * 구간을 비디오 파일로 저장
      */
-    private fun saveSegmentAsVideo(segment: com.splayer.video.data.model.PlaybackSegment) {
+    private fun saveSegmentAsVideo(segment: com.splayer.video.data.model.PlaybackSegment, useKeyframe: Boolean = false) {
         // 원본 비디오 파일 이름 (한글 포함 지원)
         val videoPath = currentVideoPath ?: externalVideoUri ?: ""
+
+        // 키프레임 모드: 시작/끝 시간을 키프레임 위치로 보정
+        val actualStartTime: Long
+        val actualEndTime: Long
+        if (useKeyframe) {
+            actualStartTime = findNearestKeyframe(videoPath, segment.startTime, seekBefore = true)
+            actualEndTime = findNearestKeyframe(videoPath, segment.endTime, seekBefore = false)
+            android.util.Log.d("PlayerActivity", "키프레임 보정: ${segment.startTime}→${actualStartTime}ms, ${segment.endTime}→${actualEndTime}ms")
+        } else {
+            actualStartTime = segment.startTime
+            actualEndTime = segment.endTime
+        }
+
         val fileName = segmentManager.extractFileName(videoPath)
         val baseFileName = fileName.substringBeforeLast(".")
 
         // 파일명: 재생파일명+시작시간+종료시간 (콜론 제외)
-        val startTimeStr = formatTimeForEdit(segment.startTime).replace(":", "")
-        val endTimeStr = formatTimeForEdit(segment.endTime).replace(":", "")
+        val startTimeStr = formatTimeForEdit(actualStartTime).replace(":", "")
+        val endTimeStr = formatTimeForEdit(actualEndTime).replace(":", "")
         val outputFileName = "${baseFileName}_${startTimeStr}_${endTimeStr}.mp4"
 
         // 취소 플래그
@@ -2796,9 +2850,9 @@ class PlayerActivity : AppCompatActivity() {
                             } else {
                                 videoPath
                             }
-                            val startSec = "%.3f".format(java.util.Locale.US, segment.startTime / 1000.0)
-                            val durationSec = "%.3f".format(java.util.Locale.US, (segment.endTime - segment.startTime) / 1000.0)
-                            val durationMs = segment.endTime - segment.startTime
+                            val startSec = "%.3f".format(java.util.Locale.US, actualStartTime / 1000.0)
+                            val durationSec = "%.3f".format(java.util.Locale.US, (actualEndTime - actualStartTime) / 1000.0)
+                            val durationMs = actualEndTime - actualStartTime
                             android.util.Log.d("PlayerActivity", "FFmpeg 시도: input=$ffmpegInput ss=$startSec t=$durationSec")
 
                             // FFmpeg 진행률 콜백
@@ -2847,8 +2901,8 @@ class PlayerActivity : AppCompatActivity() {
                     extractVideoSegment(
                         videoPath,
                         tempFile.absolutePath,
-                        segment.startTime * 1000,
-                        segment.endTime * 1000,
+                        actualStartTime * 1000,
+                        actualEndTime * 1000,
                         progressDialog,
                         cancelled
                     )
@@ -2870,23 +2924,7 @@ class PlayerActivity : AppCompatActivity() {
                 }
 
                 // temp → MediaStore (Q+) 또는 외부 저장소
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    val values = android.content.ContentValues().apply {
-                        put(android.provider.MediaStore.Video.Media.DISPLAY_NAME, outputFileName)
-                        put(android.provider.MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-                        put(android.provider.MediaStore.Video.Media.RELATIVE_PATH, android.os.Environment.DIRECTORY_MOVIES)
-                    }
-                    val uri = contentResolver.insert(android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
-                    if (uri != null) {
-                        contentResolver.openOutputStream(uri)?.use { os ->
-                            tempFile.inputStream().use { it.copyTo(os) }
-                        }
-                    }
-                } else {
-                    val outputDir = getExternalFilesDir(android.os.Environment.DIRECTORY_MOVIES)
-                    outputDir?.mkdirs()
-                    tempFile.copyTo(File(outputDir, outputFileName), overwrite = true)
-                }
+                saveToMediaStore(tempFile, outputFileName)
                 tempFile.delete()
 
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
@@ -2901,6 +2939,48 @@ class PlayerActivity : AppCompatActivity() {
                 }
                 android.util.Log.e("PlayerActivity", "Failed to save segment", e)
             }
+        }
+    }
+
+    /**
+     * 지정 시간 근처의 키프레임 위치를 찾는다 (밀리초 반환)
+     * @param seekBefore true=이전 키프레임(시작점용), false=이후 키프레임(끝점용)
+     */
+    private fun findNearestKeyframe(videoPath: String, timeMs: Long, seekBefore: Boolean): Long {
+        val extractor = android.media.MediaExtractor()
+        try {
+            if (videoPath.startsWith("content://")) {
+                val uri = android.net.Uri.parse(videoPath)
+                contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+                    extractor.setDataSource(pfd.fileDescriptor)
+                }
+            } else {
+                extractor.setDataSource(videoPath)
+            }
+
+            // 비디오 트랙 선택
+            for (i in 0 until extractor.trackCount) {
+                val mime = extractor.getTrackFormat(i).getString(android.media.MediaFormat.KEY_MIME) ?: continue
+                if (mime.startsWith("video/")) {
+                    extractor.selectTrack(i)
+                    break
+                }
+            }
+
+            val timeUs = timeMs * 1000L
+            val seekMode = if (seekBefore)
+                android.media.MediaExtractor.SEEK_TO_PREVIOUS_SYNC
+            else
+                android.media.MediaExtractor.SEEK_TO_NEXT_SYNC
+
+            extractor.seekTo(timeUs, seekMode)
+            val keyframeUs = extractor.sampleTime
+            return if (keyframeUs >= 0) keyframeUs / 1000L else timeMs
+        } catch (e: Throwable) {
+            android.util.Log.e("PlayerActivity", "키프레임 탐색 실패, 원본 시간 사용", e)
+            return timeMs
+        } finally {
+            extractor.release()
         }
     }
 
@@ -4060,6 +4140,7 @@ class PlayerActivity : AppCompatActivity() {
                 popup.menu.add(0, 3, order++, "회전")
                 popup.menu.add(0, 4, order++, "설정")
                 popup.menu.add(0, 6, order++, if (isCastingActive) "캐스트 리모컨" else "캐스트")
+                popup.menu.add(0, 7, order++, "비디오 합치기")
                 popup.setOnMenuItemClickListener { item ->
                     when (item.itemId) {
                         1 -> { switchEngine(); true }
@@ -4068,6 +4149,7 @@ class PlayerActivity : AppCompatActivity() {
                         4 -> { showSubtitleDialog(); true }
                         5 -> true // 코덱 정보는 표시만
                         6 -> { if (isCastingActive) showCastRemoteDialog() else showCastDevicePickerDialog(); true }
+                        7 -> { launchVideoPicker(); true }
                         else -> false
                     }
                 }
@@ -5566,6 +5648,407 @@ class PlayerActivity : AppCompatActivity() {
             "mpga" -> "MP3"
             "wma " -> "WMA"
             else -> codec.uppercase().trim()
+        }
+    }
+
+    // =============================================
+    // 비디오 합치기 / 구간 병합 기능
+    // =============================================
+
+    /**
+     * MediaStore (Q+) 또는 외부 저장소에 파일 저장
+     */
+    private fun saveToMediaStore(sourceFile: File, outputFileName: String) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            val values = android.content.ContentValues().apply {
+                put(android.provider.MediaStore.Video.Media.DISPLAY_NAME, outputFileName)
+                put(android.provider.MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+                put(android.provider.MediaStore.Video.Media.RELATIVE_PATH, android.os.Environment.DIRECTORY_MOVIES)
+            }
+            val uri = contentResolver.insert(android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
+            if (uri != null) {
+                contentResolver.openOutputStream(uri)?.use { os ->
+                    sourceFile.inputStream().use { it.copyTo(os) }
+                }
+            }
+        } else {
+            val outputDir = getExternalFilesDir(android.os.Environment.DIRECTORY_MOVIES)
+            outputDir?.mkdirs()
+            sourceFile.copyTo(File(outputDir, outputFileName), overwrite = true)
+        }
+    }
+
+    /**
+     * 비디오 파일 선택기 실행
+     */
+    private fun launchVideoPicker() {
+        videoMergePickerLauncher.launch(arrayOf("video/*"))
+    }
+
+    /**
+     * URI에서 파일명 추출
+     */
+    private fun getDisplayNameFromUri(uri: Uri): String? {
+        contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                if (nameIndex >= 0) return cursor.getString(nameIndex)
+            }
+        }
+        return null
+    }
+
+    /**
+     * URI에서 재생시간 추출
+     */
+    private fun getDurationFromUri(uri: Uri): Long {
+        return try {
+            val retriever = android.media.MediaMetadataRetriever()
+            retriever.setDataSource(this, uri)
+            val durationStr = retriever.extractMetadata(
+                android.media.MediaMetadataRetriever.METADATA_KEY_DURATION
+            )
+            retriever.release()
+            durationStr?.toLongOrNull() ?: 0L
+        } catch (_: Exception) {
+            0L
+        }
+    }
+
+    /**
+     * 선택한 비디오 순서 조정 다이얼로그
+     */
+    private fun showMergeOrderDialog(uris: List<Uri>) {
+        val items = uris.mapNotNull { uri ->
+            try {
+                val name = getDisplayNameFromUri(uri) ?: uri.lastPathSegment ?: "unknown"
+                val duration = getDurationFromUri(uri)
+                com.splayer.video.ui.adapter.MergeItem(uri, name, duration)
+            } catch (_: Exception) {
+                null
+            }
+        }.toMutableList()
+
+        if (items.size < 2) {
+            Toast.makeText(this, "유효한 비디오가 2개 미만입니다.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val recyclerView = androidx.recyclerview.widget.RecyclerView(this).apply {
+            layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this@PlayerActivity)
+            setPadding(0, 16, 0, 16)
+        }
+
+        val adapter = com.splayer.video.ui.adapter.VideoMergeAdapter(
+            items = items,
+            onMoveUp = { pos ->
+                if (pos > 0) {
+                    val temp = items[pos]
+                    items[pos] = items[pos - 1]
+                    items[pos - 1] = temp
+                    recyclerView.adapter?.notifyItemMoved(pos, pos - 1)
+                    recyclerView.adapter?.notifyItemChanged(pos)
+                    recyclerView.adapter?.notifyItemChanged(pos - 1)
+                }
+            },
+            onMoveDown = { pos ->
+                if (pos < items.size - 1) {
+                    val temp = items[pos]
+                    items[pos] = items[pos + 1]
+                    items[pos + 1] = temp
+                    recyclerView.adapter?.notifyItemMoved(pos, pos + 1)
+                    recyclerView.adapter?.notifyItemChanged(pos)
+                    recyclerView.adapter?.notifyItemChanged(pos + 1)
+                }
+            },
+            onRemove = { pos ->
+                items.removeAt(pos)
+                recyclerView.adapter?.notifyItemRemoved(pos)
+                recyclerView.adapter?.notifyItemRangeChanged(pos, items.size - pos)
+            }
+        )
+
+        recyclerView.adapter = adapter
+
+        AlertDialog.Builder(this)
+            .setTitle("비디오 합치기 (${items.size}개)")
+            .setView(recyclerView)
+            .setPositiveButton("합치기") { _, _ ->
+                if (items.size >= 2) {
+                    mergeVideos(items)
+                } else {
+                    Toast.makeText(this, "2개 이상의 비디오가 필요합니다.", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("취소", null)
+            .show()
+    }
+
+    /**
+     * 여러 비디오 파일을 하나로 합치기
+     */
+    private fun mergeVideos(items: List<com.splayer.video.ui.adapter.MergeItem>) {
+        val timestamp = java.text.SimpleDateFormat("yyyyMMdd_HHmm", java.util.Locale.US)
+            .format(java.util.Date())
+        val firstBaseName = items.first().displayName.substringBeforeLast(".")
+        val outputFileName = "merged_${firstBaseName}_${items.size}files_$timestamp.mp4"
+
+        val cancelled = java.util.concurrent.atomic.AtomicBoolean(false)
+
+        val progressDialog = android.app.ProgressDialog(this).apply {
+            setTitle("비디오 합치기")
+            setMessage("준비 중...")
+            setProgressStyle(android.app.ProgressDialog.STYLE_HORIZONTAL)
+            max = 100
+            progress = 0
+            isIndeterminate = true
+            setCancelable(false)
+            setButton(android.app.ProgressDialog.BUTTON_NEGATIVE, "취소") { _, _ ->
+                cancelled.set(true)
+                try { com.arthenica.ffmpegkit.FFmpegKit.cancel() } catch (_: Throwable) {}
+            }
+            show()
+        }
+
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val tempFiles = mutableListOf<File>()
+            val concatListFile = File(cacheDir, "concat_list_${System.currentTimeMillis()}.txt")
+            val tempOutputFile = File(cacheDir, "ffmpeg_merge_${System.currentTimeMillis()}.mp4")
+
+            try {
+                // 1단계: content:// URI를 임시파일로 복사
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    progressDialog.isIndeterminate = false
+                    progressDialog.setMessage("파일 복사 중...")
+                }
+
+                for ((index, item) in items.withIndex()) {
+                    if (cancelled.get()) break
+
+                    val tempFile = File(cacheDir, "merge_input_${index}_${System.currentTimeMillis()}.mp4")
+                    tempFiles.add(tempFile)
+
+                    contentResolver.openInputStream(item.uri)?.use { input ->
+                        tempFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    } ?: throw Exception("파일을 읽을 수 없습니다: ${item.displayName}")
+
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        progressDialog.progress = ((index + 1) * 30 / items.size)
+                        progressDialog.setMessage("파일 복사 중... (${index + 1}/${items.size})")
+                    }
+                }
+
+                if (cancelled.get()) throw kotlinx.coroutines.CancellationException()
+
+                // 2단계: concat list 파일 작성
+                val concatContent = tempFiles.joinToString("\n") { "file '${it.absolutePath.replace("'", "'\\''")}'" }
+                concatListFile.writeText(concatContent)
+
+                // 3단계: FFmpeg concat 실행
+                val totalDurationMs = items.sumOf { it.duration }
+
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    progressDialog.setMessage("[FFmpeg] 합치는 중...\n$outputFileName")
+                    progressDialog.progress = 30
+                }
+
+                com.arthenica.ffmpegkit.FFmpegKitConfig.enableStatisticsCallback { stats ->
+                    if (totalDurationMs > 0) {
+                        val progress = 30 + ((stats.time.toFloat() / totalDurationMs) * 70).toInt().coerceIn(0, 70)
+                        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                            if (progressDialog.isShowing) {
+                                progressDialog.progress = progress
+                            }
+                        }
+                    }
+                }
+
+                val session = com.arthenica.ffmpegkit.FFmpegKit.executeWithArguments(
+                    arrayOf(
+                        "-y",
+                        "-f", "concat",
+                        "-safe", "0",
+                        "-i", concatListFile.absolutePath,
+                        "-c", "copy",
+                        "-avoid_negative_ts", "make_zero",
+                        tempOutputFile.absolutePath
+                    )
+                )
+
+                if (cancelled.get()) throw kotlinx.coroutines.CancellationException()
+
+                if (!com.arthenica.ffmpegkit.ReturnCode.isSuccess(session.returnCode)
+                    || !tempOutputFile.exists()
+                    || tempOutputFile.length() == 0L
+                ) {
+                    throw Exception("FFmpeg 합치기 실패")
+                }
+
+                // 4단계: MediaStore에 저장
+                saveToMediaStore(tempOutputFile, outputFileName)
+
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    Toast.makeText(this@PlayerActivity, "합치기 완료: $outputFileName", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    Toast.makeText(this@PlayerActivity, "합치기 취소됨", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    Toast.makeText(this@PlayerActivity, "합치기 실패: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+                Log.e("PlayerActivity", "Merge failed", e)
+            } finally {
+                tempFiles.forEach { it.delete() }
+                concatListFile.delete()
+                tempOutputFile.delete()
+            }
+        }
+    }
+
+    /**
+     * 구간들을 하나의 비디오로 병합
+     */
+    private fun mergeSegmentsAsVideo(segments: List<com.splayer.video.data.model.PlaybackSegment>, useKeyframe: Boolean = false) {
+        val videoPath = currentVideoPath ?: externalVideoUri ?: ""
+        val fileName = segmentManager.extractFileName(videoPath)
+        val baseFileName = fileName.substringBeforeLast(".")
+        val timestamp = java.text.SimpleDateFormat("yyyyMMdd_HHmm", java.util.Locale.US)
+            .format(java.util.Date())
+        val outputFileName = "${baseFileName}_merged_$timestamp.mp4"
+
+        val cancelled = java.util.concurrent.atomic.AtomicBoolean(false)
+
+        val progressDialog = android.app.ProgressDialog(this).apply {
+            setTitle("구간 병합")
+            setMessage("준비 중...")
+            setProgressStyle(android.app.ProgressDialog.STYLE_HORIZONTAL)
+            max = 100
+            progress = 0
+            isIndeterminate = false
+            setCancelable(false)
+            setButton(android.app.ProgressDialog.BUTTON_NEGATIVE, "취소") { _, _ ->
+                cancelled.set(true)
+                try { com.arthenica.ffmpegkit.FFmpegKit.cancel() } catch (_: Throwable) {}
+            }
+            show()
+        }
+
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val tempSegmentFiles = mutableListOf<File>()
+            val concatListFile = File(cacheDir, "concat_segments_${System.currentTimeMillis()}.txt")
+            val tempOutputFile = File(cacheDir, "ffmpeg_merge_seg_${System.currentTimeMillis()}.mp4")
+
+            try {
+                val ffmpegInput = if (videoPath.startsWith("content://")) {
+                    val uri = Uri.parse(videoPath)
+                    com.arthenica.ffmpegkit.FFmpegKitConfig.getSafParameterForRead(this@PlayerActivity, uri)
+                } else {
+                    videoPath
+                }
+
+                // 1단계: 각 구간을 임시파일로 추출
+                for ((index, segment) in segments.withIndex()) {
+                    if (cancelled.get()) break
+
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        progressDialog.setMessage("구간 ${index + 1}/${segments.size} 추출 중...")
+                        progressDialog.progress = (index * 60 / segments.size)
+                    }
+
+                    val tempFile = File(cacheDir, "seg_${index}_${System.currentTimeMillis()}.mp4")
+                    tempSegmentFiles.add(tempFile)
+
+                    val actualStart = if (useKeyframe) findNearestKeyframe(videoPath, segment.startTime, seekBefore = true) else segment.startTime
+                    val actualEnd = if (useKeyframe) findNearestKeyframe(videoPath, segment.endTime, seekBefore = false) else segment.endTime
+                    val startSec = "%.3f".format(java.util.Locale.US, actualStart / 1000.0)
+                    val durationSec = "%.3f".format(java.util.Locale.US, (actualEnd - actualStart) / 1000.0)
+
+                    val session = com.arthenica.ffmpegkit.FFmpegKit.executeWithArguments(
+                        arrayOf("-y", "-ss", startSec, "-i", ffmpegInput, "-t", durationSec, "-c", "copy", tempFile.absolutePath)
+                    )
+
+                    if (!com.arthenica.ffmpegkit.ReturnCode.isSuccess(session.returnCode)
+                        || !tempFile.exists()
+                        || tempFile.length() == 0L
+                    ) {
+                        throw Exception("구간 ${index + 1} 추출 실패")
+                    }
+                }
+
+                if (cancelled.get()) throw kotlinx.coroutines.CancellationException()
+
+                // 2단계: concat list 작성 및 병합
+                val concatContent = tempSegmentFiles.joinToString("\n") { "file '${it.absolutePath.replace("'", "'\\''")}'" }
+                concatListFile.writeText(concatContent)
+
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    progressDialog.setMessage("[FFmpeg] 병합 중...\n$outputFileName")
+                    progressDialog.progress = 60
+                }
+
+                val totalDurationMs = segments.sumOf { it.endTime - it.startTime }
+                com.arthenica.ffmpegkit.FFmpegKitConfig.enableStatisticsCallback { stats ->
+                    if (totalDurationMs > 0) {
+                        val progress = 60 + ((stats.time.toFloat() / totalDurationMs) * 40).toInt().coerceIn(0, 40)
+                        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                            if (progressDialog.isShowing) {
+                                progressDialog.progress = progress
+                            }
+                        }
+                    }
+                }
+
+                val session = com.arthenica.ffmpegkit.FFmpegKit.executeWithArguments(
+                    arrayOf(
+                        "-y",
+                        "-f", "concat",
+                        "-safe", "0",
+                        "-i", concatListFile.absolutePath,
+                        "-c", "copy",
+                        "-avoid_negative_ts", "make_zero",
+                        tempOutputFile.absolutePath
+                    )
+                )
+
+                if (cancelled.get()) throw kotlinx.coroutines.CancellationException()
+
+                if (!com.arthenica.ffmpegkit.ReturnCode.isSuccess(session.returnCode)
+                    || !tempOutputFile.exists()
+                    || tempOutputFile.length() == 0L
+                ) {
+                    throw Exception("FFmpeg 병합 실패")
+                }
+
+                // 3단계: MediaStore에 저장
+                saveToMediaStore(tempOutputFile, outputFileName)
+
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    Toast.makeText(this@PlayerActivity, "병합 완료: $outputFileName", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    Toast.makeText(this@PlayerActivity, "병합 취소됨", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    Toast.makeText(this@PlayerActivity, "병합 실패: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+                Log.e("PlayerActivity", "Segment merge failed", e)
+            } finally {
+                tempSegmentFiles.forEach { it.delete() }
+                concatListFile.delete()
+                tempOutputFile.delete()
+            }
         }
     }
 

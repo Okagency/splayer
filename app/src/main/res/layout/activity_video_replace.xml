@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/replaceToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/surface"
+        android:elevation="4dp"
+        app:title="영상 리플레이스"
+        app:titleTextColor="@color/on_surface"
+        app:navigationIcon="@drawable/ic_arrow_back" />
+
+    <!-- 원본 영상 선택 -->
+    <Button
+        android:id="@+id/btnSelectOriginal"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="12dp"
+        android:text="원본 영상 선택"
+        android:textSize="14sp"
+        style="@style/Widget.Material3.Button.OutlinedButton" />
+
+    <!-- 원본 영상 정보 -->
+    <TextView
+        android:id="@+id/txtOriginalInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="4dp"
+        android:text=""
+        android:textSize="12sp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:visibility="gone" />
+
+    <!-- 교체 파일 추가 -->
+    <Button
+        android:id="@+id/btnAddReplacement"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="8dp"
+        android:text="+ 교체 파일 추가"
+        android:textSize="14sp"
+        android:enabled="false"
+        style="@style/Widget.Material3.Button.OutlinedButton" />
+
+    <!-- 안내 텍스트 -->
+    <TextView
+        android:id="@+id/txtReplaceGuide"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="원본 영상을 선택한 후\n교체할 세그먼트 파일을 추가하세요"
+        android:textColor="?android:attr/textColorSecondary"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:layout_marginTop="32dp" />
+
+    <!-- 교체 세그먼트 목록 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/replaceSegmentList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp" />
+
+    <!-- 하단 버튼 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="@color/surface"
+        android:elevation="4dp">
+
+        <Button
+            android:id="@+id/btnOutputFolder"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="저장: Movies"
+            android:textSize="12sp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            style="@style/Widget.Material3.Button.OutlinedButton" />
+
+        <Button
+            android:id="@+id/btnStartReplace"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="리플레이스 시작"
+            android:textSize="14sp"
+            android:enabled="false"
+            style="@style/Widget.Material3.Button" />
+    </LinearLayout>
+
+</LinearLayout>

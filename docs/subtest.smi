@@ -1,0 +1,27 @@
+<SAMI>
+<HEAD>
+<TITLE>Hanbange 3.0 - (C) Breadu Soft 2008</TITLE>
+<STYLE TYPE="text/css">
+<!--
+P { margin-left:8pt; margin-right:8pt; margin-bottom:2pt;
+    margin-top:2pt; font-size:14pt; text-align:center;
+    font-family:굴림, Arial; font-weight:normal; color:white;
+    background-color:black; }
+.KRCC { Name:한국어; lang:ko-KR; SAMIType:CC; }
+#STDPrn { Name:Standard Print; }
+#LargePrn { Name:Large Print; font-size:20pt; }
+#SmallPrn { Name:Small Print; font-size:10pt; }
+-->
+</STYLE>
+</HEAD>
+<BODY>
+<SYNC Start=3000><P Class=KRCC>
+자막테스트
+<SYNC Start=4200><P Class=KRCC>&nbsp;
+<SYNC Start=21170><P Class=KRCC>
+자막테스트1 <br> 자막테스트2. <br>
+<SYNC Start=31362><P Class=KRCC>
+자막테스트3
+
+</BODY>
+</SAMI>

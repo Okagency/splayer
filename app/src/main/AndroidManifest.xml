@@ -58,6 +58,24 @@
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:theme="@style/Theme.SPlayer.Player" />
 
+        <!-- 영상 분할 액티비티 -->
+        <activity
+            android:name=".ui.split.VideoSplitActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SPlayer" />
+
+        <!-- 영상 병합 액티비티 -->
+        <activity
+            android:name=".ui.merge.VideoMergeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SPlayer" />
+
+        <!-- 영상 리플레이스 액티비티 -->
+        <activity
+            android:name=".ui.replace.VideoReplaceActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SPlayer" />
+
         <!-- Google Cast OptionsProvider -->
         <meta-data
             android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"

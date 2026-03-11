@@ -89,6 +89,9 @@ dependencies {
     // VLC 엔진 (설정에서 ExoPlayer/VLC 선택 가능)
     implementation("org.videolan.android:libvlc-all:3.6.0")
 
+    // DocumentFile (SAF 폴더 저장)
+    implementation("androidx.documentfile:documentfile:1.0.1")
+
     // FFmpeg-kit (구간 추출용 - stream copy)
     implementation("io.github.maitrungduc1410:ffmpeg-kit-min:6.0.1")
 
