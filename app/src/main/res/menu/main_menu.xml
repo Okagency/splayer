@@ -16,17 +16,17 @@
 
     <item
         android:id="@+id/action_split"
-        android:title="영상 분할"
+        android:title="추출"
         app:showAsAction="never" />
 
     <item
         android:id="@+id/action_merge"
-        android:title="영상 병합"
+        android:title="병합"
         app:showAsAction="never" />
 
     <item
         android:id="@+id/action_replace"
-        android:title="영상 패치"
+        android:title="패치"
         app:showAsAction="never" />
 
 </menu>

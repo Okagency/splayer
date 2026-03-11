@@ -12,7 +12,7 @@
         android:layout_height="?attr/actionBarSize"
         android:background="@color/surface"
         android:elevation="4dp"
-        app:title="영상 분할"
+        app:title="추출"
         app:titleTextColor="@color/on_surface"
         app:navigationIcon="@drawable/ic_arrow_back" />
 
@@ -93,6 +93,7 @@
                 android:gravity="center"
                 android:inputType="number"
                 android:textSize="12sp"
+                android:textColor="#000000"
                 android:padding="2dp"
                 android:background="@android:drawable/editbox_background"
                 android:imeOptions="actionGo" />

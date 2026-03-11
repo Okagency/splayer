@@ -305,17 +305,14 @@ class VideoSplitActivity : AppCompatActivity() {
                     break
                 }
             }
-            // SEEK_TO_NEXT_SYNC로 처음부터 끝까지 키프레임 수집
-            var lastTimeUs = -1L
-            extractor.seekTo(0, MediaExtractor.SEEK_TO_NEXT_SYNC)
+            // 모든 샘플을 순회하며 SYNC 플래그로 키프레임 수집
             while (true) {
                 val sampleTime = extractor.sampleTime
                 if (sampleTime < 0) break
-                if (sampleTime == lastTimeUs) break
-                lastTimeUs = sampleTime
-                keyframes.add(sampleTime / 1000L) // us → ms
-                // 다음 키프레임으로 이동
-                extractor.seekTo(sampleTime + 1, MediaExtractor.SEEK_TO_NEXT_SYNC)
+                if ((extractor.sampleFlags and MediaExtractor.SAMPLE_FLAG_SYNC) != 0) {
+                    keyframes.add(sampleTime / 1000L) // us → ms
+                }
+                if (!extractor.advance()) break
             }
             Log.d(TAG, "키프레임 ${keyframes.size}개 발견")
         } catch (e: Throwable) {
@@ -402,7 +399,7 @@ class VideoSplitActivity : AppCompatActivity() {
 
         val cancelled = AtomicBoolean(false)
         val progressDialog = android.app.ProgressDialog(this).apply {
-            setTitle("영상 분할 중")
+            setTitle("추출 중")
             setMessage("준비 중...")
             setProgressStyle(android.app.ProgressDialog.STYLE_HORIZONTAL)
             max = 100

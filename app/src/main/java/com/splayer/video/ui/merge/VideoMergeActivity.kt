@@ -129,7 +129,7 @@ class VideoMergeActivity : AppCompatActivity() {
 
         val cancelled = AtomicBoolean(false)
         val progressDialog = android.app.ProgressDialog(this).apply {
-            setTitle("영상 병합 중")
+            setTitle("병합 중")
             setMessage("준비 중...")
             setProgressStyle(android.app.ProgressDialog.STYLE_HORIZONTAL)
             max = 100

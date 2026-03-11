@@ -12,7 +12,7 @@
         android:layout_height="?attr/actionBarSize"
         android:background="@color/surface"
         android:elevation="4dp"
-        app:title="영상 병합"
+        app:title="병합"
         app:titleTextColor="@color/on_surface"
         app:navigationIcon="@drawable/ic_arrow_back" />
 

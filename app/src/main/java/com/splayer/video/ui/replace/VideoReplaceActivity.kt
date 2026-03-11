@@ -50,6 +50,7 @@ class VideoReplaceActivity : AppCompatActivity() {
     private val segments = mutableListOf<ReplaceSegment>()
     private var segmentAdapter: ReplaceSegmentAdapter? = null
     private var outputFolderUri: Uri? = null
+    private var videoDurationMs: Long = 0L
 
     private val originalPickerLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -206,7 +207,7 @@ class VideoReplaceActivity : AppCompatActivity() {
 
         val cancelled = AtomicBoolean(false)
         val progressDialog = android.app.ProgressDialog(this).apply {
-            setTitle("영상 패치 중")
+            setTitle("패치 중")
             setMessage("준비 중...")
             setProgressStyle(android.app.ProgressDialog.STYLE_HORIZONTAL)
             max = 100
@@ -286,14 +287,21 @@ class VideoReplaceActivity : AppCompatActivity() {
 
                 val totalParts = parts.size
                 val concatTempFiles = mutableListOf<File>()
+                var maxProgress = 5 // 진행률은 절대 내려가지 않음
 
                 // 2단계: 각 파트를 임시 파일로 준비
                 for ((index, part) in parts.withIndex()) {
                     if (cancelled.get()) break
 
+                    val partProgressStart = 5 + (index * 65 / totalParts)
+                    val partProgressEnd = 5 + ((index + 1) * 65 / totalParts)
+
                     withContext(Dispatchers.Main) {
                         progressDialog.setMessage("파트 ${index + 1}/$totalParts 처리 중...")
-                        progressDialog.progress = (index * 70 / totalParts)
+                        if (partProgressStart > maxProgress) {
+                            maxProgress = partProgressStart
+                            progressDialog.progress = partProgressStart
+                        }
                     }
 
                     if (part.isGap) {
@@ -305,6 +313,25 @@ class VideoReplaceActivity : AppCompatActivity() {
                         } else {
                             // 마지막 키프레임 이후 → 영상 끝까지
                             Long.MAX_VALUE
+                        }
+
+                        val gapDurationMs = if (endMs == Long.MAX_VALUE) {
+                            (videoDurationMs - startMs).coerceAtLeast(1)
+                        } else {
+                            (endMs - startMs).coerceAtLeast(1)
+                        }
+
+                        // 실시간 진행률 콜백
+                        com.arthenica.ffmpegkit.FFmpegKitConfig.enableStatisticsCallback { stats ->
+                            val timeMs = stats.time.toLong()
+                            if (timeMs > 0) {
+                                val partPct = ((timeMs * 100) / gapDurationMs).toInt().coerceIn(0, 100)
+                                val overall = partProgressStart + (partPct * (partProgressEnd - partProgressStart) / 100)
+                                if (overall > maxProgress) {
+                                    maxProgress = overall
+                                    runOnUiThread { progressDialog.progress = overall }
+                                }
+                            }
                         }
 
                         val startSec = "%.3f".format(java.util.Locale.US, startMs / 1000.0)
@@ -339,6 +366,13 @@ class VideoReplaceActivity : AppCompatActivity() {
                         } ?: throw Exception("교체 파일을 읽을 수 없습니다")
                         Log.d(TAG, "교체 파일 복사: ${tempFile.name} = ${tempFile.length()} bytes")
                     }
+
+                    withContext(Dispatchers.Main) {
+                        if (partProgressEnd > maxProgress) {
+                            maxProgress = partProgressEnd
+                            progressDialog.progress = partProgressEnd
+                        }
+                    }
                 }
 
                 if (cancelled.get()) throw kotlinx.coroutines.CancellationException()
@@ -352,11 +386,29 @@ class VideoReplaceActivity : AppCompatActivity() {
 
                 // 4단계: FFmpeg concat 실행
                 withContext(Dispatchers.Main) {
-                    progressDialog.setMessage("[FFmpeg] 패치 중...\n$outputFileName")
-                    progressDialog.progress = 70
+                    progressDialog.setMessage("병합 중...\n$outputFileName")
+                    if (70 > maxProgress) {
+                        maxProgress = 70
+                        progressDialog.progress = 70
+                    }
                 }
 
-                val session = executeFFmpeg(
+                // concat 실시간 진행률 (70-88%)
+                if (videoDurationMs > 0) {
+                    com.arthenica.ffmpegkit.FFmpegKitConfig.enableStatisticsCallback { stats ->
+                        val timeMs = stats.time.toLong()
+                        if (timeMs > 0) {
+                            val pct = ((timeMs * 100) / videoDurationMs).toInt().coerceIn(0, 100)
+                            val overall = 70 + (pct * 18 / 100)
+                            if (overall > maxProgress) {
+                                maxProgress = overall
+                                runOnUiThread { progressDialog.progress = overall }
+                            }
+                        }
+                    }
+                }
+
+                executeFFmpeg(
                     arrayOf(
                         "-y", "-f", "concat", "-safe", "0",
                         "-i", concatListFile.absolutePath,
@@ -375,7 +427,7 @@ class VideoReplaceActivity : AppCompatActivity() {
                 // 5단계: 저장
                 withContext(Dispatchers.Main) {
                     progressDialog.setMessage("저장 중...")
-                    progressDialog.progress = 90
+                    progressDialog.progress = 88
                 }
 
                 if (outputFolderUri != null) {
@@ -412,73 +464,16 @@ class VideoReplaceActivity : AppCompatActivity() {
 
     private suspend fun executeFFmpeg(args: Array<String>) {
         withContext(Dispatchers.IO) {
-            val latch = java.util.concurrent.CountDownLatch(1)
-            val encodingDone = java.util.concurrent.atomic.AtomicBoolean(false)
-            val outputFile = File(args.last())
-            val logBuffer = StringBuilder()
-
             Log.d(TAG, "FFmpeg 실행: ${args.joinToString(" ")}")
 
-            // 이전 행 세션 정리 (한 번에 하나씩만 실행)
-            try { com.arthenica.ffmpegkit.FFmpegKit.cancel() } catch (_: Throwable) {}
-            Thread.sleep(300)
+            val session = com.arthenica.ffmpegkit.FFmpegKit.execute(args.joinToString(" "))
+            val returnCode = session.returnCode
 
-            val session = com.arthenica.ffmpegkit.FFmpegKit.executeWithArgumentsAsync(
-                args,
-                { latch.countDown() },
-                { log ->
-                    val msg = log.message ?: ""
-                    logBuffer.append(msg)
-                    if (msg.contains("muxing overhead")) {
-                        encodingDone.set(true)
-                    }
-                },
-                null
-            )
-
-            var waited = 0
-            var lastFileSize = -1L
-            var fileSizeStableCount = 0
-
-            while (!latch.await(1, java.util.concurrent.TimeUnit.SECONDS)) {
-                waited++
-
-                // 방법1: 로그 기반 완료 감지
-                if (encodingDone.get()) {
-                    Thread.sleep(3000) // flush 대기
-                    Log.d(TAG, "FFmpeg 완료(로그), ${waited}초, 파일=${outputFile.length()}")
-                    com.arthenica.ffmpegkit.FFmpegKit.cancel(session.sessionId)
-                    break
-                }
-
-                // 방법2: 파일크기 5초간 안정
-                if (waited >= 5 && outputFile.exists()) {
-                    val currentSize = outputFile.length()
-                    if (currentSize > 0 && currentSize == lastFileSize) {
-                        fileSizeStableCount++
-                        if (fileSizeStableCount >= 5) {
-                            Log.d(TAG, "FFmpeg 완료(파일안정), ${waited}초, 파일=${currentSize}")
-                            com.arthenica.ffmpegkit.FFmpegKit.cancel(session.sessionId)
-                            break
-                        }
-                    } else {
-                        fileSizeStableCount = 0
-                    }
-                    lastFileSize = currentSize
-                }
-
-                // 절대 타임아웃 2분
-                if (waited > 120) {
-                    Log.d(TAG, "FFmpeg 타임아웃 (${waited}초)")
-                    com.arthenica.ffmpegkit.FFmpegKit.cancel(session.sessionId)
-                    break
-                }
-            }
-
-            // 실패 시 FFmpeg 로그 출력
-            val fileSize = if (outputFile.exists()) outputFile.length() else 0L
-            if (fileSize == 0L) {
-                Log.e(TAG, "FFmpeg 출력 없음! 로그:\n${logBuffer.toString().takeLast(2000)}")
+            if (com.arthenica.ffmpegkit.ReturnCode.isSuccess(returnCode)) {
+                Log.d(TAG, "FFmpeg 성공")
+            } else {
+                val logs = session.allLogsAsString ?: ""
+                Log.e(TAG, "FFmpeg 실패 (rc=${returnCode}): ${logs.takeLast(2000)}")
             }
         }
     }
@@ -489,9 +484,13 @@ class VideoReplaceActivity : AppCompatActivity() {
         try {
             extractor.setDataSource(this, uri, null)
             for (i in 0 until extractor.trackCount) {
-                val mime = extractor.getTrackFormat(i).getString(MediaFormat.KEY_MIME) ?: continue
+                val format = extractor.getTrackFormat(i)
+                val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
                 if (mime.startsWith("video/")) {
                     extractor.selectTrack(i)
+                    videoDurationMs = try {
+                        format.getLong(MediaFormat.KEY_DURATION) / 1000L
+                    } catch (_: Exception) { 0L }
                     break
                 }
             }
