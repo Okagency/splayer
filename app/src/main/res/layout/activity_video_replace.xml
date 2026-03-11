@@ -12,47 +12,72 @@
         android:layout_height="?attr/actionBarSize"
         android:background="@color/surface"
         android:elevation="4dp"
-        app:title="영상 리플레이스"
+        app:title="영상 패치"
         app:titleTextColor="@color/on_surface"
         app:navigationIcon="@drawable/ic_arrow_back" />
 
-    <!-- 원본 영상 선택 -->
-    <Button
-        android:id="@+id/btnSelectOriginal"
+    <!-- 원본 영상 섹션 -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp"
         android:layout_marginStart="12dp"
         android:layout_marginEnd="12dp"
         android:layout_marginTop="12dp"
-        android:text="원본 영상 선택"
-        android:textSize="14sp"
-        style="@style/Widget.Material3.Button.OutlinedButton" />
+        android:background="@drawable/bg_replace_card">
 
-    <!-- 원본 영상 정보 -->
-    <TextView
-        android:id="@+id/txtOriginalInfo"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="4dp"
-        android:text=""
-        android:textSize="12sp"
-        android:textColor="?android:attr/textColorSecondary"
-        android:visibility="gone" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="원본 영상"
+            android:textSize="11sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textStyle="bold" />
 
-    <!-- 교체 파일 추가 -->
+        <TextView
+            android:id="@+id/txtOriginalName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="선택되지 않음"
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:ellipsize="middle"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/txtOriginalInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text=""
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btnSelectOriginal"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_marginTop="8dp"
+            android:text="영상 선택"
+            android:textSize="13sp"
+            style="@style/Widget.Material3.Button.OutlinedButton" />
+    </LinearLayout>
+
+    <!-- 교체 파일 추가 버튼 -->
     <Button
         android:id="@+id/btnAddReplacement"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="44dp"
         android:layout_marginStart="12dp"
         android:layout_marginEnd="12dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="12dp"
         android:text="+ 교체 파일 추가"
         android:textSize="14sp"
         android:enabled="false"
-        style="@style/Widget.Material3.Button.OutlinedButton" />
+        style="@style/Widget.Material3.Button.TonalButton" />
 
     <!-- 안내 텍스트 -->
     <TextView
@@ -62,9 +87,9 @@
         android:layout_gravity="center"
         android:text="원본 영상을 선택한 후\n교체할 세그먼트 파일을 추가하세요"
         android:textColor="?android:attr/textColorSecondary"
-        android:textSize="14sp"
+        android:textSize="13sp"
         android:gravity="center"
-        android:layout_marginTop="32dp" />
+        android:layout_marginTop="24dp" />
 
     <!-- 교체 세그먼트 목록 -->
     <androidx.recyclerview.widget.RecyclerView
@@ -72,6 +97,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:layout_marginTop="8dp"
         android:clipToPadding="false"
         android:paddingTop="4dp"
         android:paddingBottom="4dp" />
@@ -102,7 +128,7 @@
             android:layout_height="48dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
-            android:text="리플레이스 시작"
+            android:text="패치 시작"
             android:textSize="14sp"
             android:enabled="false"
             style="@style/Widget.Material3.Button" />

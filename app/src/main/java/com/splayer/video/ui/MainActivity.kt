@@ -42,7 +42,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var swipeRefresh: SwipeRefreshLayout
     private lateinit var progressBar: ProgressBar
-    private lateinit var emptyView: TextView
     private lateinit var videoAdapter: VideoAdapter
     private lateinit var viewModel: MainViewModel
 
@@ -115,8 +114,6 @@ class MainActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerView)
         swipeRefresh = findViewById(R.id.swipeRefresh)
         progressBar = findViewById(R.id.progressBar)
-        emptyView = findViewById(R.id.emptyView)
-
         videoAdapter = VideoAdapter(
             onVideoClick = { video -> onVideoClicked(video) },
             onVideoLongClick = { video -> onVideoLongClicked(video) }
@@ -159,7 +156,6 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             viewModel.videos.collect { videos ->
                 videoAdapter.submitList(videos)
-                emptyView.visibility = if (videos.isEmpty() && !viewModel.isLoading.value) View.VISIBLE else View.GONE
             }
         }
 
@@ -167,9 +163,6 @@ class MainActivity : AppCompatActivity() {
             viewModel.isLoading.collect { isLoading ->
                 progressBar.visibility = if (isLoading && videoAdapter.itemCount == 0) View.VISIBLE else View.GONE
                 swipeRefresh.isRefreshing = isLoading && videoAdapter.itemCount > 0
-                if (!isLoading) {
-                    emptyView.visibility = if (videoAdapter.itemCount == 0) View.VISIBLE else View.GONE
-                }
             }
         }
     }

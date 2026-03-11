@@ -2809,10 +2809,15 @@ class PlayerActivity : AppCompatActivity() {
         val fileName = segmentManager.extractFileName(videoPath)
         val baseFileName = fileName.substringBeforeLast(".")
 
-        // 파일명: 재생파일명+시작시간+종료시간 (콜론 제외)
-        val startTimeStr = formatTimeForEdit(actualStartTime).replace(":", "")
-        val endTimeStr = formatTimeForEdit(actualEndTime).replace(":", "")
-        val outputFileName = "${baseFileName}_${startTimeStr}_${endTimeStr}.mp4"
+        // 파일명: 키프레임 기준이면 kf인덱스, 시간 기준이면 시간
+        val outputFileName = if (useKeyframe) {
+            val (startKfIdx, endKfIdx) = getKeyframeIndices(videoPath, actualStartTime, actualEndTime)
+            "${baseFileName}_kf${startKfIdx}_kf${endKfIdx}.mp4"
+        } else {
+            val startTimeStr = formatTimeForEdit(actualStartTime).replace(":", "")
+            val endTimeStr = formatTimeForEdit(actualEndTime).replace(":", "")
+            "${baseFileName}_${startTimeStr}_${endTimeStr}.mp4"
+        }
 
         // 취소 플래그
         val cancelled = java.util.concurrent.atomic.AtomicBoolean(false)
@@ -2979,6 +2984,53 @@ class PlayerActivity : AppCompatActivity() {
         } catch (e: Throwable) {
             android.util.Log.e("PlayerActivity", "키프레임 탐색 실패, 원본 시간 사용", e)
             return timeMs
+        } finally {
+            extractor.release()
+        }
+    }
+
+    private fun getKeyframeIndices(videoPath: String, startTimeMs: Long, endTimeMs: Long): Pair<Int, Int> {
+        val extractor = android.media.MediaExtractor()
+        try {
+            // content URI 우선 사용 (seekTo 호환성 향상)
+            val uri = externalVideoUri
+            if (uri != null) {
+                extractor.setDataSource(this, android.net.Uri.parse(uri), null)
+            } else if (videoPath.startsWith("content://")) {
+                extractor.setDataSource(this, android.net.Uri.parse(videoPath), null)
+            } else {
+                extractor.setDataSource(videoPath)
+            }
+            for (i in 0 until extractor.trackCount) {
+                val mime = extractor.getTrackFormat(i).getString(android.media.MediaFormat.KEY_MIME) ?: continue
+                if (mime.startsWith("video/")) {
+                    extractor.selectTrack(i)
+                    break
+                }
+            }
+            // seekTo + SEEK_TO_NEXT_SYNC 방식으로 키프레임만 수집 (advance()는 전체 프레임 순회라 ANR 발생)
+            var index = 0
+            var startIdx = 0
+            var endIdx = 0
+            var lastTimeUs = -1L
+            extractor.seekTo(0, android.media.MediaExtractor.SEEK_TO_NEXT_SYNC)
+            while (true) {
+                val sampleTime = extractor.sampleTime
+                if (sampleTime < 0) break
+                if (sampleTime == lastTimeUs) break
+                lastTimeUs = sampleTime
+                val sampleMs = sampleTime / 1000L
+                if (sampleMs <= startTimeMs) startIdx = index
+                if (sampleMs <= endTimeMs) endIdx = index
+                if (sampleMs > endTimeMs) break
+                index++
+                extractor.seekTo(sampleTime + 1, android.media.MediaExtractor.SEEK_TO_NEXT_SYNC)
+            }
+            android.util.Log.d("PlayerActivity", "getKeyframeIndices: scanned $index keyframes, start=$startIdx end=$endIdx (startMs=$startTimeMs endMs=$endTimeMs)")
+            return Pair(startIdx, endIdx)
+        } catch (e: Throwable) {
+            android.util.Log.e("PlayerActivity", "getKeyframeIndices failed: ${e.message}", e)
+            return Pair(0, 0)
         } finally {
             extractor.release()
         }
@@ -5942,13 +5994,23 @@ class PlayerActivity : AppCompatActivity() {
 
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             val tempSegmentFiles = mutableListOf<File>()
+            var tempInputFile: File? = null
             val concatListFile = File(cacheDir, "concat_segments_${System.currentTimeMillis()}.txt")
             val tempOutputFile = File(cacheDir, "ffmpeg_merge_seg_${System.currentTimeMillis()}.mp4")
 
             try {
+                // content:// URI인 경우 임시 파일로 복사 (SAF fd 재사용 문제 방지)
                 val ffmpegInput = if (videoPath.startsWith("content://")) {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        progressDialog.setMessage("입력 영상 준비 중...")
+                    }
                     val uri = Uri.parse(videoPath)
-                    com.arthenica.ffmpegkit.FFmpegKitConfig.getSafParameterForRead(this@PlayerActivity, uri)
+                    val tmp = File(cacheDir, "merge_input_${System.currentTimeMillis()}.mp4")
+                    contentResolver.openInputStream(uri)?.use { input ->
+                        tmp.outputStream().use { output -> input.copyTo(output) }
+                    } ?: throw Exception("입력 영상을 열 수 없습니다")
+                    tempInputFile = tmp
+                    tmp.absolutePath
                 } else {
                     videoPath
                 }
@@ -6046,6 +6108,7 @@ class PlayerActivity : AppCompatActivity() {
                 Log.e("PlayerActivity", "Segment merge failed", e)
             } finally {
                 tempSegmentFiles.forEach { it.delete() }
+                tempInputFile?.delete()
                 concatListFile.delete()
                 tempOutputFile.delete()
             }

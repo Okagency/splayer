@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx sharp-cli -i \"D:/dev/splayer/docs/icon.png\" -o /dev/null metadata)",
+      "Bash(npx sharp-cli -i \"D:/dev/splayer/docs/icon.png\" -o \"/tmp/icon_info.png\" resize 1 1)",
+      "Bash(npx sharp-cli --help)",
+      "Bash(npx sharp-cli -i \"D:/dev/splayer/docs/icon.png\" -o \"/tmp/icon_trimmed.png\" trim)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-mdpi/ic_launcher.png\" resize 48 48 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-hdpi/ic_launcher.png\" resize 72 72 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-xhdpi/ic_launcher.png\" resize 96 96 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-xxhdpi/ic_launcher.png\" resize 144 144 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png\" resize 192 192 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-mdpi/ic_launcher_round.png\" resize 48 48 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-hdpi/ic_launcher_round.png\" resize 72 72 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png\" resize 96 96 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png\" resize 144 144 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png\" resize 192 192 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-mdpi/ic_launcher.png\" flatten \"#1A1A2E\" -- resize 48 48 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-hdpi/ic_launcher.png\" flatten \"#1A1A2E\" -- resize 72 72 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-xhdpi/ic_launcher.png\" flatten \"#1A1A2E\" -- resize 96 96 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-xxhdpi/ic_launcher.png\" flatten \"#1A1A2E\" -- resize 144 144 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png\" flatten \"#1A1A2E\" -- resize 192 192 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-mdpi/ic_launcher_round.png\" flatten \"#1A1A2E\" -- resize 48 48 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-hdpi/ic_launcher_round.png\" flatten \"#1A1A2E\" -- resize 72 72 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png\" flatten \"#1A1A2E\" -- resize 96 96 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png\" flatten \"#1A1A2E\" -- resize 144 144 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"D:/dev/splayer/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png\" flatten \"#1A1A2E\" -- resize 192 192 --fit cover)",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"/tmp/ic_launcher_foreground_mdpi.png\" resize 72 72 --fit contain --background \"#00000000\" -- extend 18 18 18 18 --background \"#00000000\")",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"/tmp/ic_launcher_foreground_hdpi.png\" resize 108 108 --fit contain --background \"#00000000\" -- extend 27 27 27 27 --background \"#00000000\")",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"/tmp/ic_launcher_foreground_xhdpi.png\" resize 144 144 --fit contain --background \"#00000000\" -- extend 36 36 36 36 --background \"#00000000\")",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"/tmp/ic_launcher_foreground_xxhdpi.png\" resize 216 216 --fit contain --background \"#00000000\" -- extend 54 54 54 54 --background \"#00000000\")",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"/tmp/ic_launcher_foreground_hdpi.png\" flatten \"#1A1A2E\" -- resize 108 108 --fit contain --background \"#1A1A2E\" -- extend 27 27 27 27 --background \"#1A1A2E\")",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"/tmp/ic_launcher_foreground_xhdpi.png\" flatten \"#1A1A2E\" -- resize 144 144 --fit contain --background \"#1A1A2E\" -- extend 36 36 36 36 --background \"#1A1A2E\")",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"/tmp/ic_launcher_foreground_xxhdpi.png\" flatten \"#1A1A2E\" -- resize 216 216 --fit contain --background \"#1A1A2E\" -- extend 54 54 54 54 --background \"#1A1A2E\")",
+      "Bash(npx sharp-cli -i \"/tmp/icon_trimmed.png\" -o \"/tmp/ic_launcher_foreground_xxxhdpi.png\" flatten \"#1A1A2E\" -- resize 288 288 --fit contain --background \"#1A1A2E\" -- extend 72 72 72 72 --background \"#1A1A2E\")"
+    ],
+    "additionalDirectories": [
+      "D:\\dev\\splayer\\app\\src\\main\\res\\mipmap-mdpi"
+    ]
+  }
+}

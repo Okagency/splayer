@@ -8,24 +8,28 @@
     android:layout_marginEnd="12dp"
     android:layout_marginTop="4dp"
     android:layout_marginBottom="4dp"
-    app:cardElevation="2dp"
-    app:cardCornerRadius="8dp"
+    app:cardElevation="0dp"
+    app:cardCornerRadius="12dp"
+    app:strokeWidth="0dp"
     android:clickable="true"
     android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
     app:cardBackgroundColor="@color/surface">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp">
+        android:padding="10dp">
 
-        <FrameLayout
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/thumbnailContainer"
-            android:layout_width="120dp"
-            android:layout_height="68dp"
+            android:layout_width="130dp"
+            android:layout_height="74dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent">
+            app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
                 android:id="@+id/thumbnail"
@@ -42,21 +46,22 @@
                 android:layout_gravity="center"
                 android:src="@drawable/ic_check_circle"
                 android:visibility="gone" />
-        </FrameLayout>
+
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:id="@+id/durationOverlay"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="4dp"
-            android:paddingStart="6dp"
-            android:paddingEnd="6dp"
+            android:layout_margin="6dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
             android:paddingTop="2dp"
             android:paddingBottom="2dp"
             android:background="@drawable/duration_background"
             android:textColor="@android:color/white"
-            android:textSize="12sp"
-            android:textStyle="bold"
+            android:textSize="11sp"
+            android:fontFamily="sans-serif-medium"
             app:layout_constraintEnd_toEndOf="@id/thumbnailContainer"
             app:layout_constraintBottom_toBottomOf="@id/thumbnailContainer"
             tools:text="12:34" />
@@ -66,15 +71,15 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:layout_marginEnd="8dp"
             android:textColor="@color/on_surface"
-            android:textSize="16sp"
-            android:textStyle="bold"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium"
             android:maxLines="2"
             android:ellipsize="end"
+            android:lineSpacingExtra="2dp"
             app:layout_constraintStart_toEndOf="@id/thumbnailContainer"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toTopOf="@id/thumbnailContainer"
             tools:text="Sample Video Name.mp4" />
 
         <TextView
@@ -84,26 +89,28 @@
             android:layout_marginStart="12dp"
             android:layout_marginTop="4dp"
             android:textColor="@color/on_surface_secondary"
-            android:textSize="13sp"
+            android:textSize="12sp"
             android:maxLines="1"
             android:ellipsize="end"
             app:layout_constraintStart_toEndOf="@id/thumbnailContainer"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/videoName"
-            tools:text="1920 x 1080" />
+            tools:text="1920 x 1080  ·  45.2 MB" />
 
         <TextView
-            android:id="@+id/videoSize"
+            android:id="@+id/videoPath"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_marginTop="2dp"
-            android:textColor="@color/on_surface_secondary"
-            android:textSize="13sp"
+            android:textColor="@color/text_muted"
+            android:textSize="11sp"
+            android:maxLines="1"
+            android:ellipsize="start"
             app:layout_constraintStart_toEndOf="@id/thumbnailContainer"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/videoInfo"
-            tools:text="45.2 MB" />
+            tools:text="/storage/emulated/0/Movies/sample.mp4" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

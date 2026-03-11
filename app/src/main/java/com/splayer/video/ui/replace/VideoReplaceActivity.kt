@@ -16,8 +16,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import com.splayer.video.R
+import kotlin.coroutines.resume
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
@@ -33,6 +35,7 @@ class VideoReplaceActivity : AppCompatActivity() {
     // UI
     private lateinit var toolbar: MaterialToolbar
     private lateinit var btnSelectOriginal: Button
+    private lateinit var txtOriginalName: TextView
     private lateinit var txtOriginalInfo: TextView
     private lateinit var btnAddReplacement: Button
     private lateinit var txtReplaceGuide: TextView
@@ -94,6 +97,7 @@ class VideoReplaceActivity : AppCompatActivity() {
     private fun setupViews() {
         toolbar = findViewById(R.id.replaceToolbar)
         btnSelectOriginal = findViewById(R.id.btnSelectOriginal)
+        txtOriginalName = findViewById(R.id.txtOriginalName)
         txtOriginalInfo = findViewById(R.id.txtOriginalInfo)
         btnAddReplacement = findViewById(R.id.btnAddReplacement)
         txtReplaceGuide = findViewById(R.id.txtReplaceGuide)
@@ -140,14 +144,15 @@ class VideoReplaceActivity : AppCompatActivity() {
         segments.clear()
         segmentAdapter?.notifyDataSetChanged()
 
-        btnSelectOriginal.text = "원본: $originalDisplayName"
+        txtOriginalName.text = originalDisplayName
         txtOriginalInfo.text = "키프레임 스캔 중..."
         txtOriginalInfo.visibility = View.VISIBLE
+        btnSelectOriginal.text = "영상 변경"
 
         lifecycleScope.launch(Dispatchers.IO) {
             scanKeyframes(uri)
             withContext(Dispatchers.Main) {
-                txtOriginalInfo.text = "$originalDisplayName (키프레임 ${keyframes.size}개)"
+                txtOriginalInfo.text = "키프레임 ${keyframes.size}개"
                 btnAddReplacement.isEnabled = true
                 txtReplaceGuide.text = "교체할 세그먼트 파일을 추가하세요"
                 updateUI()
@@ -192,7 +197,7 @@ class VideoReplaceActivity : AppCompatActivity() {
         val hasSegments = segments.isNotEmpty()
         txtReplaceGuide.visibility = if (hasSegments) View.GONE else View.VISIBLE
         btnStartReplace.isEnabled = hasSegments && originalUri != null
-        btnStartReplace.text = if (hasSegments) "리플레이스 시작 (${segments.size}개)" else "리플레이스 시작"
+        btnStartReplace.text = if (hasSegments) "패치 시작 (${segments.size}개)" else "패치 시작"
     }
 
     private fun startReplace() {
@@ -201,7 +206,7 @@ class VideoReplaceActivity : AppCompatActivity() {
 
         val cancelled = AtomicBoolean(false)
         val progressDialog = android.app.ProgressDialog(this).apply {
-            setTitle("영상 리플레이스 중")
+            setTitle("영상 패치 중")
             setMessage("준비 중...")
             setProgressStyle(android.app.ProgressDialog.STYLE_HORIZONTAL)
             max = 100
@@ -216,17 +221,48 @@ class VideoReplaceActivity : AppCompatActivity() {
         }
 
         val baseName = originalDisplayName.substringBeforeLast(".")
-        val timestamp = java.text.SimpleDateFormat("yyyyMMdd_HHmm", java.util.Locale.US)
-            .format(java.util.Date())
-        val outputFileName = "replaced_${baseName}_$timestamp.mp4"
+        // 중복 방지: p_Doubt.mp4 → p_Doubt(2).mp4 → p_Doubt(3).mp4 ...
+        var num = 1
+        var outputFileName = "p_${baseName}.mp4"
+        val outputDir = outputFolderUri
+        if (outputDir == null) {
+            val moviesDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_MOVIES)
+            while (File(moviesDir, outputFileName).exists()) {
+                num++
+                outputFileName = "p_${baseName}($num).mp4"
+            }
+        } else {
+            val docDir = androidx.documentfile.provider.DocumentFile.fromTreeUri(this, outputDir)
+            while (docDir?.findFile(outputFileName) != null) {
+                num++
+                outputFileName = "p_${baseName}($num).mp4"
+            }
+        }
 
         lifecycleScope.launch(Dispatchers.IO) {
             val tempFiles = mutableListOf<File>()
+            var tempInputFile: File? = null
             val concatListFile = File(cacheDir, "replace_concat_${System.currentTimeMillis()}.txt")
             val tempOutputFile = File(cacheDir, "ffmpeg_replace_${System.currentTimeMillis()}.mp4")
 
             try {
                 val isContentUri = uri.toString().startsWith("content://")
+
+                // content:// URI인 경우 임시 파일로 복사 (SAF fd 재사용 문제 방지)
+                val ffmpegOriginalInput = if (isContentUri) {
+                    withContext(Dispatchers.Main) {
+                        progressDialog.setMessage("원본 영상 준비 중...")
+                    }
+                    val tmp = File(cacheDir, "replace_input_${System.currentTimeMillis()}.mp4")
+                    contentResolver.openInputStream(uri)?.use { input ->
+                        tmp.outputStream().use { output -> input.copyTo(output) }
+                    } ?: throw Exception("원본 영상을 열 수 없습니다")
+                    tempInputFile = tmp
+                    Log.d(TAG, "원본 임시파일 크기: ${tmp.length()} bytes (${tmp.length() / 1024 / 1024} MB)")
+                    tmp.absolutePath
+                } else {
+                    uri.toString()
+                }
 
                 // 1단계: 갭 구간과 교체 파일 순서 결정
                 data class ConcatPart(val isGap: Boolean, val fromKf: Int, val toKf: Int, val replacementUri: Uri? = null)
@@ -262,11 +298,6 @@ class VideoReplaceActivity : AppCompatActivity() {
 
                     if (part.isGap) {
                         // 원본에서 갭 구간 추출
-                        val ffmpegInput = if (isContentUri) {
-                            com.arthenica.ffmpegkit.FFmpegKitConfig.getSafParameterForRead(this@VideoReplaceActivity, uri)
-                        } else {
-                            uri.toString()
-                        }
 
                         val startMs = keyframes[part.fromKf]
                         val endMs = if (part.toKf + 1 < keyframes.size) {
@@ -283,22 +314,20 @@ class VideoReplaceActivity : AppCompatActivity() {
 
                         if (endMs == Long.MAX_VALUE) {
                             // 영상 끝까지
-                            val session = com.arthenica.ffmpegkit.FFmpegKit.executeWithArguments(
-                                arrayOf("-y", "-ss", startSec, "-i", ffmpegInput, "-c", "copy", tempFile.absolutePath)
+                            Log.d(TAG, "갭 추출: KF#${part.fromKf}~끝, ss=${startSec}s")
+                            executeFFmpeg(
+                                arrayOf("-y", "-ss", startSec, "-i", ffmpegOriginalInput, "-c", "copy", tempFile.absolutePath)
                             )
-                            if (!com.arthenica.ffmpegkit.ReturnCode.isSuccess(session.returnCode)
-                                || !tempFile.exists() || tempFile.length() == 0L) {
-                                throw Exception("갭 구간 추출 실패 (KF #${part.fromKf}~끝)")
-                            }
                         } else {
                             val durationSec = "%.3f".format(java.util.Locale.US, (endMs - startMs) / 1000.0)
-                            val session = com.arthenica.ffmpegkit.FFmpegKit.executeWithArguments(
-                                arrayOf("-y", "-ss", startSec, "-i", ffmpegInput, "-t", durationSec, "-c", "copy", tempFile.absolutePath)
+                            Log.d(TAG, "갭 추출: KF#${part.fromKf}~#${part.toKf}, ss=${startSec}s, t=${durationSec}s")
+                            executeFFmpeg(
+                                arrayOf("-y", "-ss", startSec, "-i", ffmpegOriginalInput, "-t", durationSec, "-c", "copy", tempFile.absolutePath)
                             )
-                            if (!com.arthenica.ffmpegkit.ReturnCode.isSuccess(session.returnCode)
-                                || !tempFile.exists() || tempFile.length() == 0L) {
-                                throw Exception("갭 구간 추출 실패 (KF #${part.fromKf}~#${part.toKf})")
-                            }
+                        }
+                        Log.d(TAG, "갭 결과: ${tempFile.name} = ${tempFile.length()} bytes")
+                        if (!tempFile.exists() || tempFile.length() == 0L) {
+                            throw Exception("갭 구간 추출 실패 (KF #${part.fromKf})")
                         }
                     } else {
                         // 교체 파일을 임시 파일로 복사
@@ -308,6 +337,7 @@ class VideoReplaceActivity : AppCompatActivity() {
                         contentResolver.openInputStream(part.replacementUri!!)?.use { input ->
                             tempFile.outputStream().use { output -> input.copyTo(output) }
                         } ?: throw Exception("교체 파일을 읽을 수 없습니다")
+                        Log.d(TAG, "교체 파일 복사: ${tempFile.name} = ${tempFile.length()} bytes")
                     }
                 }
 
@@ -318,14 +348,15 @@ class VideoReplaceActivity : AppCompatActivity() {
                     "file '${it.absolutePath.replace("'", "'\\''")}'"
                 }
                 concatListFile.writeText(concatContent)
+                Log.d(TAG, "concat 목록:\n$concatContent")
 
                 // 4단계: FFmpeg concat 실행
                 withContext(Dispatchers.Main) {
-                    progressDialog.setMessage("[FFmpeg] 리플레이스 중...\n$outputFileName")
+                    progressDialog.setMessage("[FFmpeg] 패치 중...\n$outputFileName")
                     progressDialog.progress = 70
                 }
 
-                val session = com.arthenica.ffmpegkit.FFmpegKit.executeWithArguments(
+                val session = executeFFmpeg(
                     arrayOf(
                         "-y", "-f", "concat", "-safe", "0",
                         "-i", concatListFile.absolutePath,
@@ -336,10 +367,9 @@ class VideoReplaceActivity : AppCompatActivity() {
 
                 if (cancelled.get()) throw kotlinx.coroutines.CancellationException()
 
-                if (!com.arthenica.ffmpegkit.ReturnCode.isSuccess(session.returnCode)
-                    || !tempOutputFile.exists() || tempOutputFile.length() == 0L
-                ) {
-                    throw Exception("FFmpeg 리플레이스 실패")
+                Log.d(TAG, "concat 결과: ${tempOutputFile.length()} bytes")
+                if (!tempOutputFile.exists() || tempOutputFile.length() == 0L) {
+                    throw Exception("FFmpeg 패치 실패")
                 }
 
                 // 5단계: 저장
@@ -356,23 +386,99 @@ class VideoReplaceActivity : AppCompatActivity() {
 
                 withContext(Dispatchers.Main) {
                     progressDialog.dismiss()
-                    Toast.makeText(this@VideoReplaceActivity, "리플레이스 완료: $outputFileName", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@VideoReplaceActivity, "패치 완료: $outputFileName", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 withContext(Dispatchers.Main) {
                     progressDialog.dismiss()
-                    Toast.makeText(this@VideoReplaceActivity, "리플레이스 취소됨", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@VideoReplaceActivity, "패치 취소됨", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     progressDialog.dismiss()
-                    Toast.makeText(this@VideoReplaceActivity, "리플레이스 실패: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@VideoReplaceActivity, "패치 실패: ${e.message}", Toast.LENGTH_LONG).show()
                 }
                 Log.e(TAG, "Replace failed", e)
             } finally {
+                // 행 걸린 FFmpegKit 세션 정리
+                try { com.arthenica.ffmpegkit.FFmpegKit.cancel() } catch (_: Throwable) {}
                 tempFiles.forEach { it.delete() }
+                tempInputFile?.delete()
                 concatListFile.delete()
                 tempOutputFile.delete()
+            }
+        }
+    }
+
+    private suspend fun executeFFmpeg(args: Array<String>) {
+        withContext(Dispatchers.IO) {
+            val latch = java.util.concurrent.CountDownLatch(1)
+            val encodingDone = java.util.concurrent.atomic.AtomicBoolean(false)
+            val outputFile = File(args.last())
+            val logBuffer = StringBuilder()
+
+            Log.d(TAG, "FFmpeg 실행: ${args.joinToString(" ")}")
+
+            // 이전 행 세션 정리 (한 번에 하나씩만 실행)
+            try { com.arthenica.ffmpegkit.FFmpegKit.cancel() } catch (_: Throwable) {}
+            Thread.sleep(300)
+
+            val session = com.arthenica.ffmpegkit.FFmpegKit.executeWithArgumentsAsync(
+                args,
+                { latch.countDown() },
+                { log ->
+                    val msg = log.message ?: ""
+                    logBuffer.append(msg)
+                    if (msg.contains("muxing overhead")) {
+                        encodingDone.set(true)
+                    }
+                },
+                null
+            )
+
+            var waited = 0
+            var lastFileSize = -1L
+            var fileSizeStableCount = 0
+
+            while (!latch.await(1, java.util.concurrent.TimeUnit.SECONDS)) {
+                waited++
+
+                // 방법1: 로그 기반 완료 감지
+                if (encodingDone.get()) {
+                    Thread.sleep(3000) // flush 대기
+                    Log.d(TAG, "FFmpeg 완료(로그), ${waited}초, 파일=${outputFile.length()}")
+                    com.arthenica.ffmpegkit.FFmpegKit.cancel(session.sessionId)
+                    break
+                }
+
+                // 방법2: 파일크기 5초간 안정
+                if (waited >= 5 && outputFile.exists()) {
+                    val currentSize = outputFile.length()
+                    if (currentSize > 0 && currentSize == lastFileSize) {
+                        fileSizeStableCount++
+                        if (fileSizeStableCount >= 5) {
+                            Log.d(TAG, "FFmpeg 완료(파일안정), ${waited}초, 파일=${currentSize}")
+                            com.arthenica.ffmpegkit.FFmpegKit.cancel(session.sessionId)
+                            break
+                        }
+                    } else {
+                        fileSizeStableCount = 0
+                    }
+                    lastFileSize = currentSize
+                }
+
+                // 절대 타임아웃 2분
+                if (waited > 120) {
+                    Log.d(TAG, "FFmpeg 타임아웃 (${waited}초)")
+                    com.arthenica.ffmpegkit.FFmpegKit.cancel(session.sessionId)
+                    break
+                }
+            }
+
+            // 실패 시 FFmpeg 로그 출력
+            val fileSize = if (outputFile.exists()) outputFile.length() else 0L
+            if (fileSize == 0L) {
+                Log.e(TAG, "FFmpeg 출력 없음! 로그:\n${logBuffer.toString().takeLast(2000)}")
             }
         }
     }
@@ -389,15 +495,15 @@ class VideoReplaceActivity : AppCompatActivity() {
                     break
                 }
             }
-            var lastTimeUs = -1L
-            extractor.seekTo(0, MediaExtractor.SEEK_TO_NEXT_SYNC)
+            // advance() + SAMPLE_FLAG_SYNC 방식 (IO 스레드에서 실행되므로 ANR 없음)
             while (true) {
                 val sampleTime = extractor.sampleTime
                 if (sampleTime < 0) break
-                if (sampleTime == lastTimeUs) break
-                lastTimeUs = sampleTime
-                keyframes.add(sampleTime / 1000L)
-                extractor.seekTo(sampleTime + 1, MediaExtractor.SEEK_TO_NEXT_SYNC)
+                val flags = extractor.sampleFlags
+                if (flags and MediaExtractor.SAMPLE_FLAG_SYNC != 0) {
+                    keyframes.add(sampleTime / 1000L)
+                }
+                extractor.advance()
             }
             Log.d(TAG, "키프레임 ${keyframes.size}개 발견")
         } catch (e: Throwable) {

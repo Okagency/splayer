@@ -8,6 +8,8 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.request.RequestOptions
+import com.splayer.video.R
 import com.splayer.video.data.model.Video
 import com.splayer.video.databinding.ItemVideoBinding
 
@@ -72,15 +74,21 @@ class VideoAdapter(
         fun bind(video: Video, isSelectionMode: Boolean, isSelected: Boolean) {
             binding.apply {
                 videoName.text = video.displayName
-                videoInfo.text = video.getResolution()
-                videoSize.text = video.getFormattedSize()
+                videoInfo.text = "${video.getResolution()}  ·  ${video.getFormattedSize()}"
+                videoPath.text = video.path
                 durationOverlay.text = video.getFormattedDuration()
 
+                // 파일 경로 기반으로 썸네일 로드 (MKV 등 모든 포맷 지원)
                 Glide.with(thumbnail.context)
-                    .load(video.uri)
-                    .override(240, 136)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .centerCrop()
+                    .asBitmap()
+                    .load(video.path)
+                    .apply(RequestOptions()
+                        .override(260, 148)
+                        .frame(1000000) // 1초 지점 프레임
+                        .centerCrop()
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .error(R.color.thumbnail_background)
+                    )
                     .into(thumbnail)
 
                 // 체크 오버레이
